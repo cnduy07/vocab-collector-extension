@@ -48,8 +48,10 @@ Done.
 Done for the extension-side implementation.
 
 - DeepL is supported when the user adds an API key in settings.
+- A small built-in glossary improves common tech terms such as `developer` and `IT`.
 - MyMemory is used as the no-setup fallback.
 - Free Dictionary API provides IPA, a sound link, and an example for single English words when available.
+- Plural words can fall back to likely singular forms for IPA, such as `developers` to `developer`.
 - Phrases are translated, but IPA is skipped intentionally.
 - Lookup errors do not block saving.
 
@@ -78,6 +80,7 @@ Saved records are stored in `chrome.storage.local` under `savedWords`.
   "normalized": "salient",
   "meaning": "nổi bật",
   "ipa": "/ˈseɪ.li.ənt/",
+  "dictionaryText": "salient",
   "audioUrl": "https://ssl.gstatic.com/dictionary/static/sounds/example.mp3",
   "example": "A short example sentence from the dictionary API.",
   "cambridgeUrl": "https://dictionary.cambridge.org/dictionary/english/salient",
@@ -108,6 +111,8 @@ The recommended Sheet columns are:
 - Do not store Google credentials in the repo.
 - Use Apps Script as the lowest-friction Google Sheets backend.
 - Continue to save locally even when remote sync fails.
+- Prefer curated meanings for a small set of high-value tech terms when machine translation is unnatural.
+- Try singular dictionary candidates for plural words so IPA is more likely to be available.
 - Do not send source page titles or URLs to Google Sheets; keep sync data focused on the vocabulary fields.
 - Redact deployed Apps Script URLs in extension error messages because the URL is part of the write endpoint.
 - Require a webhook secret for Sheets sync. Anyone with both the Web App URL and secret could write rows.

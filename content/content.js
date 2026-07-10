@@ -113,6 +113,7 @@
       normalized: text.toLowerCase(),
       meaning: "",
       ipa: "",
+      dictionaryText: "",
       audioUrl: "",
       example: "",
       cambridgeUrl: buildCambridgeUrl(text),
@@ -221,7 +222,7 @@
         meaningEl.textContent = data.meaning || "No Vietnamese meaning found.";
       }
       if (ipaEl) {
-        ipaEl.textContent = data.ipa ? `IPA: ${data.ipa}` : data.isPhrase ? "" : "IPA: not found";
+        ipaEl.textContent = formatIpaText(data);
       }
       if (exampleEl) {
         exampleEl.style.display = data.example ? "block" : "none";
@@ -259,6 +260,7 @@
           text: lookupState.text,
           meaning: lookupState.meaning,
           ipa: lookupState.ipa,
+          dictionaryText: lookupState.dictionaryText,
           audioUrl: lookupState.audioUrl,
           example: lookupState.example,
           cambridgeUrl: lookupState.cambridgeUrl || buildCambridgeUrl(lookupState.text),
@@ -283,6 +285,17 @@
       saveBtn.textContent = "Save";
       if (statusEl) statusEl.textContent = error.message;
     }
+  }
+
+  function formatIpaText(data) {
+    if (!data.ipa) return data.isPhrase ? "" : "IPA: not found";
+
+    const lookupWord = String(data.dictionaryText || "").trim();
+    if (lookupWord && lookupWord.toLowerCase() !== String(data.text || "").toLowerCase()) {
+      return `IPA (${lookupWord}): ${data.ipa}`;
+    }
+
+    return `IPA: ${data.ipa}`;
   }
 
   document.addEventListener("mouseup", (event) => {

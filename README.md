@@ -11,8 +11,8 @@ Vocabulary Collector helps you collect useful English words while reading. Selec
 | Cambridge Dictionary link | Real, with search fallback for phrases |
 | Wiktionary link | Real |
 | Right-click "Add to Vocabulary Collector" fallback | Real |
-| Vietnamese meaning | Real lookup: DeepL if configured, otherwise MyMemory |
-| IPA, sound link, and example | Real lookup for single English words via Free Dictionary API |
+| Vietnamese meaning | Built-in glossary for selected tech terms, DeepL if configured, otherwise MyMemory |
+| IPA, sound link, and example | Real lookup for single English words via Free Dictionary API, with plural-to-singular fallback |
 | Save button | Real local save, with optional Google Sheets sync |
 | Toolbar popup | Real local list with meaning, IPA, example/sound links, sync state, per-item delete, and sync-all repair |
 | Settings page | Real, used for DeepL/MyMemory/Google Sheets configuration |
@@ -39,6 +39,7 @@ After code changes, click **Reload** on the extension card in `chrome://extensio
 8. Click **Delete** beside a saved item if you want to remove it from this browser.
 
 For phrases, the extension still translates the phrase, but IPA, sound links, and examples are intentionally skipped.
+For plural words, the extension tries the selected word first, then likely singular forms. For example, `developers` can show the IPA for `developer`.
 
 ## Settings
 
@@ -50,7 +51,7 @@ Open the extension toolbar popup and click **Settings**.
 - **DeepL endpoint**: defaults to `https://api-free.deepl.com/v2/translate`.
 - **MyMemory contact email**: optional, but recommended by MyMemory for higher-volume usage.
 
-If DeepL is not configured or fails, the extension falls back to MyMemory.
+The extension has a small built-in glossary for common tech terms such as `developer` and `IT` so those words get a more natural Vietnamese meaning. If no glossary entry matches, DeepL is used when configured; otherwise the extension falls back to MyMemory.
 
 Click **Test lookup** in settings to verify that the extension background worker can reach the lookup APIs. The test looks up `salient` and should return a Vietnamese meaning plus IPA when available.
 
@@ -327,7 +328,7 @@ If the preview says the file does not exist or mentions a 404/405-style Google p
 
 - Google Sheets sync needs your own Apps Script Web App URL; this repo does not contain Google credentials.
 - DeepL needs your own API key. Without it, MyMemory is used.
-- IPA, sound links, and examples are for single English words only and depend on what the dictionary API returns.
+- IPA, sound links, and examples are for single English words only and depend on what the dictionary API returns. Plural words can fall back to likely singular forms for IPA.
 - Text selected inside `contenteditable` fields, iframes, or some PDF viewers may not trigger the popup reliably. Use the right-click fallback when needed.
 - Some webpages with unusual selection behavior may produce no selection rectangle, so the popup will not appear.
 

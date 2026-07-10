@@ -56,7 +56,7 @@ function sendRuntimeMessage(message) {
 function renderMeta(word) {
   const details = [];
   if (word.meaning) details.push(escapeHtml(word.meaning));
-  if (word.ipa) details.push(`IPA: ${escapeHtml(word.ipa)}`);
+  if (word.ipa) details.push(renderIpa(word));
   if (word.example) details.push(`Example: ${escapeHtml(word.example)}`);
   if (word.audioUrl) {
     const soundLink = renderLink(word.audioUrl, "Sound");
@@ -75,6 +75,14 @@ function renderMeta(word) {
 
   details.push(sync);
   return details.join(" · ");
+}
+
+function renderIpa(word) {
+  const lookupWord = String(word.dictionaryText || "").trim();
+  if (lookupWord && lookupWord.toLowerCase() !== String(word.text || "").toLowerCase()) {
+    return `IPA (${escapeHtml(lookupWord)}): ${escapeHtml(word.ipa)}`;
+  }
+  return `IPA: ${escapeHtml(word.ipa)}`;
 }
 
 function renderLink(url, label) {

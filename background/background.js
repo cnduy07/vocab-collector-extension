@@ -18,6 +18,19 @@ const DEFAULT_SETTINGS = {
   sheetsWebhookToken: "",
 };
 
+const BUILT_IN_MEANINGS = {
+  developer: "lập trình viên; nhà phát triển phần mềm",
+  "software developer": "lập trình viên phần mềm",
+  "web developer": "lập trình viên web",
+  "frontend developer": "lập trình viên front-end",
+  "front-end developer": "lập trình viên front-end",
+  "backend developer": "lập trình viên back-end",
+  "back-end developer": "lập trình viên back-end",
+  "full-stack developer": "lập trình viên full-stack",
+  "full stack developer": "lập trình viên full-stack",
+  "information technology": "công nghệ thông tin",
+};
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
@@ -158,6 +171,7 @@ async function lookupVocabulary(rawText) {
     meaning: translationData ? translationData.meaning : "",
     translationProvider: translationData ? translationData.provider : "",
     ipa: dictionaryData ? dictionaryData.ipa : "",
+    dictionaryText: dictionaryData ? dictionaryData.headword : "",
     audioUrl: dictionaryData ? dictionaryData.audioUrl : "",
     example: dictionaryData ? dictionaryData.example : "",
     cambridgeUrl: buildCambridgeUrl(text),
@@ -168,6 +182,9 @@ async function lookupVocabulary(rawText) {
 }
 
 async function translateToVietnamese(text, settings) {
+  const builtInMeaning = lookupBuiltInMeaning(text);
+  if (builtInMeaning) return builtInMeaning;
+
   if (settings.deeplApiKey) {
     try {
       return await translateWithDeepL(text, settings);
@@ -177,6 +194,23 @@ async function translateToVietnamese(text, settings) {
   }
 
   return translateWithMyMemory(text, settings);
+}
+
+function lookupBuiltInMeaning(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+
+  if (normalized === "it" && text === text.toUpperCase()) {
+    return { meaning: "công nghệ thông tin (IT)", provider: "Built-in glossary" };
+  }
+
+  for (const candidate of getWordFormCandidates(normalized)) {
+    if (BUILT_IN_MEANINGS[candidate]) {
+      return { meaning: BUILT_IN_MEANINGS[candidate], provider: "Built-in glossary" };
+    }
+  }
+
+  return null;
 }
 
 async function translateWithDeepL(text, settings) {
@@ -221,14 +255,33 @@ async function translateWithMyMemory(text, settings) {
 }
 
 async function lookupDictionaryDetails(word) {
+  const candidates = getWordFormCandidates(word.toLowerCase());
+  let firstUsableDetails = null;
+
+  for (const candidate of candidates) {
+    try {
+      const details = await fetchDictionaryDetails(candidate);
+      if (details && details.ipa) return details;
+      if (details && !firstUsableDetails) firstUsableDetails = details;
+    } catch (error) {
+      console.warn(`Dictionary lookup failed for "${candidate}".`, error);
+    }
+  }
+
+  if (firstUsableDetails) return firstUsableDetails;
+  throw new Error("No dictionary details found for this word.");
+}
+
+async function fetchDictionaryDetails(word) {
   const response = await fetch(
-    `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`
+    `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
   );
 
-  if (!response.ok) throw new Error("No dictionary details found for this word.");
+  if (!response.ok) return null;
 
   const data = await response.json();
   const entries = Array.isArray(data) ? data : [];
+  const headword = (entries[0] && entries[0].word) || word;
   const phonetics = entries.flatMap((entry) => entry.phonetics || []);
   const phonetic =
     phonetics.find((item) => item.text && item.text.trim()) ||
@@ -240,13 +293,38 @@ async function lookupDictionaryDetails(word) {
   );
   const example = definitions.find((definition) => definition.example && definition.example.trim());
 
-  if (!ipa && !audio && !example) throw new Error("No dictionary details found for this word.");
+  if (!ipa && !audio && !example) return null;
   return {
     ipa,
+    headword,
     audioUrl: normalizeAudioUrl(audio && audio.audio),
     example: example ? example.example : "",
     provider: "Free Dictionary API",
   };
+}
+
+function getWordFormCandidates(word) {
+  const normalized = normalizeText(word);
+  const candidates = [normalized];
+
+  if (normalized.endsWith("ies") && normalized.length > 4) {
+    candidates.push(`${normalized.slice(0, -3)}y`);
+  }
+
+  if (normalized.endsWith("ves") && normalized.length > 4) {
+    candidates.push(`${normalized.slice(0, -3)}f`);
+    candidates.push(`${normalized.slice(0, -3)}fe`);
+  }
+
+  if (/(ches|shes|xes|zes|ses)$/.test(normalized) && normalized.length > 3) {
+    candidates.push(normalized.slice(0, -2));
+  }
+
+  if (normalized.endsWith("s") && !normalized.endsWith("ss") && normalized.length > 3) {
+    candidates.push(normalized.slice(0, -1));
+  }
+
+  return [...new Set(candidates.filter(Boolean))];
 }
 
 function normalizeAudioUrl(value) {
@@ -275,6 +353,7 @@ async function saveVocabulary(rawItem) {
     normalized,
     meaning: sanitizeOptional(sourceItem.meaning),
     ipa: sanitizeOptional(sourceItem.ipa),
+    dictionaryText: sanitizeOptional(sourceItem.dictionaryText),
     audioUrl: sanitizeOptional(sourceItem.audioUrl),
     example: sanitizeOptional(sourceItem.example),
     cambridgeUrl: sanitizeOptional(sourceItem.cambridgeUrl) || buildCambridgeUrl(text),
