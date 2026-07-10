@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Vocabulary Collector",
+  "version": "0.1.0",
+  "description": "Select a word or phrase while reading, look up Vietnamese meaning, IPA, audio, and examples, then save locally or sync to Google Sheets.",
+  "permissions": ["contextMenus", "storage"],
+  "host_permissions": [
+    "https://api.dictionaryapi.dev/*",
+    "https://api.mymemory.translated.net/*",
+    "https://api-free.deepl.com/*",
+    "https://api.deepl.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Vocabulary Collector",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options/options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
