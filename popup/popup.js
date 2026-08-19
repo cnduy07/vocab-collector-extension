@@ -4,6 +4,9 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+const SPEAKER_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+
 function renderList(words) {
   const list = document.getElementById("list");
   if (!words.length) {
@@ -15,7 +18,10 @@ function renderList(words) {
       (w, index) => `
       <div class="item">
         <div class="item-main">
-          <strong>${escapeHtml(w.text)}</strong>
+          <div class="item-head">
+            <strong>${escapeHtml(w.text)}</strong>
+            <button class="speak-item" data-speak-index="${index}" type="button" title="Listen">${SPEAKER_ICON}</button>
+          </div>
           <div class="item-meta">${renderMeta(w)}</div>
         </div>
         <div class="item-actions">
@@ -56,12 +62,10 @@ function sendRuntimeMessage(message) {
 function renderMeta(word) {
   const details = [];
   if (word.meaning) details.push(escapeHtml(word.meaning));
+  if (word.generalMeaning) details.push(`Nghĩa thường: ${escapeHtml(word.generalMeaning)}`);
   if (word.ipa) details.push(renderIpa(word));
   if (word.example) details.push(`Example: ${escapeHtml(word.example)}`);
-  if (word.audioUrl) {
-    const soundLink = renderLink(word.audioUrl, "Sound");
-    if (soundLink) details.push(soundLink);
-  }
+  if (word.contextMeaning) details.push(`Trong câu: ${escapeHtml(word.contextMeaning)}`);
   if (word.cambridgeUrl) {
     const cambridgeLink = renderLink(word.cambridgeUrl, "Cambridge");
     if (cambridgeLink) details.push(cambridgeLink);
@@ -106,6 +110,29 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
+function speakWordAt(index, button) {
+  chrome.storage.local.get({ savedWords: [] }, async (data) => {
+    const words = Array.isArray(data.savedWords) ? data.savedWords : [];
+    const word = words[index];
+    if (!word) return;
+
+    button.classList.add("is-busy");
+    try {
+      await sendRuntimeMessage({
+        type: "VC_SPEAK",
+        text: word.dictionaryText || word.text,
+        audioUrl: word.audioUrl || "",
+        lang: "en",
+      });
+      setStatus("");
+    } catch (error) {
+      setStatus(error.message, true);
+    } finally {
+      window.setTimeout(() => button.classList.remove("is-busy"), 400);
+    }
+  });
+}
+
 function deleteWordAt(index) {
   chrome.storage.local.get({ savedWords: [] }, (data) => {
     const words = Array.isArray(data.savedWords) ? data.savedWords : [];
@@ -124,6 +151,12 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.storage.local.get({ savedWords: [] }, (data) => renderList(data.savedWords));
 
   document.getElementById("list").addEventListener("click", (event) => {
+    const speakButton = event.target.closest("[data-speak-index]");
+    if (speakButton) {
+      speakWordAt(Number(speakButton.dataset.speakIndex), speakButton);
+      return;
+    }
+
     const button = event.target.closest("[data-delete-index]");
     if (!button) return;
 

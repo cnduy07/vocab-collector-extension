@@ -49,12 +49,16 @@
       input[type="text"],
       input[type="password"],
       input[type="email"],
-      input[type="url"] {
+      input[type="url"],
+      select {
         width: 100%;
         border: 1px solid #d1d5db;
         border-radius: 8px;
         padding: 9px 10px;
         font: inherit;
+      }
+      select {
+        background: #ffffff;
       }
       .check {
         display: flex;
@@ -105,13 +109,48 @@
     <main>
       <h1>Vocabulary Collector Settings</h1>
       <p>
-        MyMemory works without setup. Add a DeepL API key for higher-quality translation, and add a
-        Google Apps Script Web App URL when you are ready to sync saves to a Sheet.
+        Google Translate is used by default and needs no setup &mdash; it is the same engine as
+        translate.google.com. The built-in IT glossary overrides it for technical terms. Add a DeepL API
+        key if you prefer DeepL, and a Google Apps Script Web App URL to sync saves to a Sheet.
       </p>
 
       <form id="settings-form">
         <fieldset>
-          <legend>Lookup</legend>
+          <legend>Translation</legend>
+          <label>
+            Translation engine
+            <select id="translationProvider">
+              <option value="auto">Auto &mdash; Google Translate, then any fallback</option>
+              <option value="google">Google Translate</option>
+              <option value="deepl">DeepL (needs an API key)</option>
+              <option value="mymemory">MyMemory</option>
+            </select>
+          </label>
+          <p class="hint">
+            If the chosen engine fails, the next one is tried automatically so a lookup rarely comes back
+            empty. Google Translate also returns the other senses of a word, shown under the meaning.
+          </p>
+          <label class="check">
+            <input id="techGlossaryEnabled" type="checkbox" />
+            Use the built-in IT / software glossary
+          </label>
+          <p class="hint">
+            Technical terms are translated from a curated glossary instead of a general engine, so
+            <code>commit</code>, <code>thread</code>, and <code>socket</code> get their software meaning.
+            For words whose everyday meaning differs, both are shown.
+          </p>
+          <label class="check">
+            <input id="contextTranslationEnabled" type="checkbox" />
+            Also translate the sentence around the selection
+          </label>
+          <p class="hint">
+            Adds a collapsible &ldquo;Ngh&#297;a trong c&#226;u&rdquo; line to the lookup card, which
+            disambiguates words that carry several meanings.
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Engine credentials</legend>
           <label>
             DeepL API key
             <input id="deeplApiKey" type="password" autocomplete="off" placeholder="Optional" />

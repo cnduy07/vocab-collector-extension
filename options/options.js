@@ -1,4 +1,7 @@
 const DEFAULT_SETTINGS = {
+  translationProvider: "auto",
+  techGlossaryEnabled: true,
+  contextTranslationEnabled: true,
   deeplApiKey: "",
   deeplEndpoint: "https://api-free.deepl.com/v2/translate",
   myMemoryEmail: "",
@@ -8,6 +11,9 @@ const DEFAULT_SETTINGS = {
 };
 
 const fields = {
+  translationProvider: document.getElementById("translationProvider"),
+  techGlossaryEnabled: document.getElementById("techGlossaryEnabled"),
+  contextTranslationEnabled: document.getElementById("contextTranslationEnabled"),
   deeplApiKey: document.getElementById("deeplApiKey"),
   deeplEndpoint: document.getElementById("deeplEndpoint"),
   myMemoryEmail: document.getElementById("myMemoryEmail"),
@@ -59,6 +65,9 @@ function saveSettings() {
 
 function readForm() {
   return {
+    translationProvider: fields.translationProvider.value || DEFAULT_SETTINGS.translationProvider,
+    techGlossaryEnabled: fields.techGlossaryEnabled.checked,
+    contextTranslationEnabled: fields.contextTranslationEnabled.checked,
     deeplApiKey: fields.deeplApiKey.value.trim(),
     deeplEndpoint: fields.deeplEndpoint.value.trim() || DEFAULT_SETTINGS.deeplEndpoint,
     myMemoryEmail: fields.myMemoryEmail.value.trim(),
@@ -69,6 +78,9 @@ function readForm() {
 }
 
 function render(settings) {
+  fields.translationProvider.value = settings.translationProvider || DEFAULT_SETTINGS.translationProvider;
+  fields.techGlossaryEnabled.checked = settings.techGlossaryEnabled !== false;
+  fields.contextTranslationEnabled.checked = settings.contextTranslationEnabled !== false;
   fields.deeplApiKey.value = settings.deeplApiKey || "";
   fields.deeplEndpoint.value = settings.deeplEndpoint || DEFAULT_SETTINGS.deeplEndpoint;
   fields.myMemoryEmail.value = settings.myMemoryEmail || "";
@@ -104,7 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await sendRuntimeMessage({ type: "VC_TEST_LOOKUP" });
       const meaning = result.meaning || "no Vietnamese meaning";
       const ipa = result.ipa || "no IPA";
-      setStatus(`Lookup ok: salient = ${meaning}; ${ipa}`);
+      const via = result.translationProvider || "unknown engine";
+      setStatus(`Lookup ok via ${via}: commit = ${meaning}; ${ipa}`);
     } catch (error) {
       setStatus(error.message, true);
     } finally {

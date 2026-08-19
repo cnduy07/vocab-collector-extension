@@ -1,6 +1,12 @@
 # Vocabulary Collector — Chrome Extension
 
-Vocabulary Collector helps you collect useful English words while reading. Select a word or phrase on a webpage, review the Vietnamese meaning, IPA, sound link, and example, then save it locally or sync it to a personal Google Sheet.
+Vocabulary Collector helps you collect useful English words while reading. Select a word or phrase on a webpage, review the Vietnamese meaning, other senses, IPA, an example, and how the word reads in its own sentence, listen to the pronunciation, then save it locally or sync it to a personal Google Sheet.
+
+It is tuned for reading technical material: a built-in IT/software glossary overrides general machine translation for several hundred terms, so `commit`, `thread`, `socket`, and `deprecated` get their software meaning instead of a literal one.
+
+For a detailed account of what changed in v0.2.0, why the old translation was
+weak, and every bug found and fixed along the way, see
+[UPGRADE-NOTES.md](UPGRADE-NOTES.md).
 
 ## Current status
 
@@ -11,11 +17,14 @@ Vocabulary Collector helps you collect useful English words while reading. Selec
 | Cambridge Dictionary link | Real, with search fallback for phrases |
 | Wiktionary link | Real |
 | Right-click "Add to Vocabulary Collector" fallback | Real |
-| Vietnamese meaning | Built-in glossary for selected tech terms, DeepL if configured, otherwise MyMemory |
-| IPA, sound link, and example | Real lookup for single English words via Free Dictionary API, with plural-to-singular fallback |
+| Vietnamese meaning | Built-in IT glossary first, then Google Translate, DeepL, or MyMemory |
+| Other senses of the word | Real, per part of speech, from Google Translate's dictionary data |
+| Sentence-context translation | Real, the sentence around the selection, shown under **In context** |
+| Pronunciation button | Real, in the lookup card and beside every saved word |
+| IPA and example | Real lookup for single English words via Free Dictionary API, with plural-to-singular fallback |
 | Save button | Real local save, with optional Google Sheets sync |
 | Toolbar popup | Real local list with meaning, IPA, example/sound links, sync state, per-item delete, and sync-all repair |
-| Settings page | Real, used for DeepL/MyMemory/Google Sheets configuration |
+| Settings page | Real, used for engine choice, glossary, context, and Google Sheets configuration |
 
 ## How to load it in Chrome
 
@@ -32,28 +41,45 @@ After code changes, click **Reload** on the extension card in `chrome://extensio
 1. Open a normal webpage.
 2. Select an English word, such as `salient`.
 3. A popup should appear near the selection.
-4. Wait for the Vietnamese meaning, IPA, sound link, and example lookup.
-5. Use the dictionary buttons if you want to inspect the word externally.
-6. Click **Save**.
-7. Open the toolbar popup to review recent saves.
-8. Click **Delete** beside a saved item if you want to remove it from this browser.
+4. Wait for the Vietnamese meaning, other senses, IPA, and example lookup.
+5. Click the speaker button to hear the word.
+6. Click **In context** to see the sentence you selected from, translated.
+7. Use the dictionary buttons if you want to inspect the word externally.
+8. Click **Save**.
+9. Open the toolbar popup to review recent saves, and use the speaker button there to replay any word.
+10. Click **Delete** beside a saved item if you want to remove it from this browser.
 
-For phrases, the extension still translates the phrase, but IPA, sound links, and examples are intentionally skipped.
+For phrases, the extension still translates the phrase, but IPA, audio metadata, and examples are intentionally skipped.
 For plural words, the extension tries the selected word first, then likely singular forms. For example, `developers` can show the IPA for `developer`.
 
 ## Settings
 
 Open the extension toolbar popup and click **Settings**.
 
-### Lookup settings
+### Translation settings
 
-- **DeepL API key**: optional. If present, DeepL is used first.
+- **Translation engine**: `Auto` (default) uses Google Translate first and falls back to the other engines if it fails. You can also pin the engine to Google Translate, DeepL, or MyMemory. Whatever you pick, the remaining engines are still used as fallbacks so a lookup rarely comes back empty.
+- **Use the built-in IT / software glossary**: on by default. See below.
+- **Also translate the sentence around the selection**: on by default. Adds the **In context** line to the lookup card.
+- **DeepL API key**: optional. Needed only if you want DeepL.
 - **DeepL endpoint**: defaults to `https://api-free.deepl.com/v2/translate`.
 - **MyMemory contact email**: optional, but recommended by MyMemory for higher-volume usage.
 
-The extension has a small built-in glossary for common tech terms such as `developer` and `IT` so those words get a more natural Vietnamese meaning. If no glossary entry matches, DeepL is used when configured; otherwise the extension falls back to MyMemory.
+#### Why the translation is close to Google Translate
 
-Click **Test lookup** in settings to verify that the extension background worker can reach the lookup APIs. The test looks up `salient` and should return a Vietnamese meaning plus IPA when available.
+Lookups go through Google Translate's public web endpoint, the same engine behind translate.google.com, so a word or phrase comes back with the wording you would get by pasting it there. It needs no API key. Beyond the single best translation it also returns the word's other senses grouped by part of speech, which are listed under the meaning.
+
+#### The IT glossary
+
+General machine translation is fine for prose but drifts on technical nouns: `commit` becomes "cam kết", `thread` becomes "sợi chỉ", `socket` becomes "ổ cắm". `background/glossary.js` holds several hundred software, web, data, concurrency, and ops terms whose entry wins over the machine translation; the card marks those with an **IT** tag. For terms whose everyday meaning is very different, both meanings are shown.
+
+Plural and inflected forms are matched too, so `threads` finds the `thread` entry.
+
+#### Sentence context
+
+The content script grabs the sentence your selection sits in and translates it as a whole, shown under a collapsible **In context** line. This is what disambiguates a word that carries several meanings — it shows how the word is being used right there in the document you are reading.
+
+Click **Test lookup** in settings to verify that the extension background worker can reach the lookup APIs. The test looks up `commit` in a sentence and reports which engine answered.
 
 ### If lookup fails on a webpage
 
@@ -63,7 +89,7 @@ Try these in order:
 2. Reload the extension in `chrome://extensions`.
 3. Open extension Settings and click **Test lookup**.
 4. If **Test lookup** works but the webpage popup still fails, reload that webpage again and select the word once more.
-5. If **Test lookup** fails, check the Settings message. A bad DeepL key can fail first, but the extension should fall back to MyMemory.
+5. If **Test lookup** fails, check the Settings message. It names each engine that was tried and why it failed.
 
 ### Google Sheets sync
 
@@ -327,7 +353,9 @@ If the preview says the file does not exist or mentions a 404/405-style Google p
 ## Known limitations
 
 - Google Sheets sync needs your own Apps Script Web App URL; this repo does not contain Google credentials.
-- DeepL needs your own API key. Without it, MyMemory is used.
+- Google Translate's public endpoint is undocumented and unversioned. It has been stable for years and is what browser translation extensions use, but Google could change or rate-limit it; the DeepL and MyMemory fallbacks exist for that.
+- DeepL needs your own API key.
+- Recorded human pronunciation comes from Free Dictionary API, whose media host is sometimes down. When a recording will not load, the extension falls back to Google text-to-speech and then to the browser's own speech synthesis, so the speaker button still works.
 - IPA, sound links, and examples are for single English words only and depend on what the dictionary API returns. Plural words can fall back to likely singular forms for IPA.
 - Text selected inside `contenteditable` fields, iframes, or some PDF viewers may not trigger the popup reliably. Use the right-click fallback when needed.
 - Some webpages with unusual selection behavior may produce no selection rectangle, so the popup will not appear.
