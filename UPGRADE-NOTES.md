@@ -1,5 +1,7 @@
 # Upgrade notes — v0.1.0 → v0.2.0
 
+*[Bản tiếng Việt](UPGRADE-NOTES.vi.md)*
+
 This document explains what was wrong, what was changed, and every bug that was
 found along the way, with the reasoning behind each fix.
 

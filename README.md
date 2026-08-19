@@ -6,7 +6,8 @@ It is tuned for reading technical material: a built-in IT/software glossary over
 
 For a detailed account of what changed in v0.2.0, why the old translation was
 weak, and every bug found and fixed along the way, see
-[UPGRADE-NOTES.md](UPGRADE-NOTES.md).
+[UPGRADE-NOTES.md](UPGRADE-NOTES.md) — or
+[UPGRADE-NOTES.vi.md](UPGRADE-NOTES.vi.md) for the Vietnamese version.
 
 ## Current status
 
